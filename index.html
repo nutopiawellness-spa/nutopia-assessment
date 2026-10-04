@@ -325,6 +325,12 @@
 body.has-kiosk-nav .top-rule{display:none}
 @media (max-width:360px){.kiosk-nav a{font-size:.85rem;gap:4px}.kiosk-nav svg{width:16px;height:16px}}
 </style>
+<style>
+html.embed body{background:transparent!important;min-height:0!important}
+.guest-of-note{margin:0 0 16px;padding:12px 14px;border-radius:12px;background:rgba(122,92,46,.1);border:1px solid rgba(122,92,46,.35);color:#5E4420;font-weight:600}
+html.embed .top-rule,html.embed #kiosk-nav,html.embed .view-toggle,html.embed .site-header,html.embed .sync-bar{display:none!important}
+html.embed body.has-kiosk-nav{padding-top:0!important;padding-bottom:0!important}
+</style>
 </head>
 <body>
 
@@ -395,10 +401,13 @@ body.has-kiosk-nav .top-rule{display:none}
       <fieldset style="margin-top:32px; border:0; padding:0;">
         <legend class="field-title" data-i18n="discoveryLegend">How did you discover us?</legend>
         <div class="choice-row">
-          <label class="check-option"><input type="checkbox" name="discovery" value="Facebook"><span>Facebook</span></label>
+          <label class="check-option"><input type="checkbox" name="discovery" value="Facebook Ad"><span data-i18n="discFbAd">Facebook ad</span></label>
+          <label class="check-option"><input type="checkbox" name="discovery" value="Facebook Page / Messenger"><span data-i18n="discFbPage">Facebook page / Messenger</span></label>
           <label class="check-option"><input type="checkbox" name="discovery" value="Instagram"><span>Instagram</span></label>
-          <label class="check-option"><input type="checkbox" name="discovery" value="Google"><span>Google</span></label>
+          <label class="check-option"><input type="checkbox" name="discovery" value="Google Maps"><span data-i18n="discGMaps">Google Maps</span></label>
+          <label class="check-option"><input type="checkbox" name="discovery" value="Google Search / Ads"><span data-i18n="discGSearch">Google search</span></label>
           <label class="check-option"><input type="checkbox" name="discovery" value="Family / Friends"><span data-i18n="discFamily">Family / Friends</span></label>
+          <label class="check-option"><input type="checkbox" name="discovery" value="Kasama ng nag-book"><span data-i18n="discWith">Came with someone who booked</span></label>
           <label class="check-option"><input type="checkbox" name="discovery" value="Website"><span data-i18n="discWebsite">Website</span></label>
           <input class="field-input" name="discoveryOther" style="min-width:180px; flex:1;" data-i18n-placeholder="discOther" placeholder="Other" aria-label="Other discovery source">
         </div>
@@ -532,7 +541,7 @@ const TRANSLATIONS = {
     privacyStrong: "Your information is private.", privacyText: "This form stays on this device unless you choose to print or save it.",
     s1Title: "Choose your service", s1Sub: "Your questions will adapt to your selection.",
     s2Title: "About you", fCustomerName: "Customer name", fDate: "Date", fAge: "Age", fPhone: "Contact number", fDob: "Date of birth", fEmail: "Email address",
-    discoveryLegend: "How did you discover us?", discFamily: "Family / Friends", discWebsite: "Website", discOther: "Other", phFullName: "Full name",
+    discoveryLegend: "How did you discover us?", discFbAd: "Facebook ad", discFbPage: "Facebook page / Messenger", discGMaps: "Google Maps", discGSearch: "Google search", discWith: "Came with someone who booked", discFamily: "Family / Friends", discWebsite: "Website", discOther: "Other", phFullName: "Full name",
     s3Sub: "Share anything your therapist should know.",
     s4Title: "Preferences", s4Sub: "Help us personalize your visit.",
     s5Title: "Therapist recommendations", s5Sub: "For internal use only.", therapistPlaceholder: "Treatment notes and recommendations",
@@ -550,7 +559,7 @@ const TRANSLATIONS = {
     privacyStrong: "Pribado ang iyong impormasyon.", privacyText: "Mananatili ang form na ito sa device na ito maliban kung i-print o i-save mo.",
     s1Title: "Piliin ang serbisyo", s1Sub: "Aayon ang mga tanong sa napili mo.",
     s2Title: "Tungkol sa iyo", fCustomerName: "Pangalan ng customer", fDate: "Petsa", fAge: "Edad", fPhone: "Numero ng telepono", fDob: "Kaarawan", fEmail: "Email address",
-    discoveryLegend: "Paano mo kami nalaman?", discFamily: "Pamilya / Kaibigan", discWebsite: "Website", discOther: "Iba pa", phFullName: "Buong pangalan",
+    discoveryLegend: "Paano mo kami nalaman?", discFbAd: "Facebook ad", discFbPage: "Facebook page / Messenger", discGMaps: "Google Maps", discGSearch: "Google search", discWith: "Kasama ng nag-book", discFamily: "Pamilya / Kaibigan", discWebsite: "Website", discOther: "Iba pa", phFullName: "Buong pangalan",
     s3Sub: "Ibahagi ang dapat malaman ng iyong therapist.",
     s4Title: "Kagustuhan", s4Sub: "Tulungan kaming i-personalize ang iyong visit.",
     s5Title: "Rekomendasyon ng therapist", s5Sub: "Para sa internal use lamang.", therapistPlaceholder: "Mga tala at rekomendasyon sa treatment",
@@ -568,7 +577,7 @@ const TRANSLATIONS = {
     privacyStrong: "您的信息将被保密。", privacyText: "除非您选择打印或保存，否则此表格仅保留在此设备上。",
     s1Title: "选择服务项目", s1Sub: "问题将根据您的选择自动调整。",
     s2Title: "个人信息", fCustomerName: "客户姓名", fDate: "日期", fAge: "年龄", fPhone: "联系电话", fDob: "出生日期", fEmail: "电子邮箱",
-    discoveryLegend: "您是如何知道我们的？", discFamily: "家人 / 朋友", discWebsite: "网站", discOther: "其他", phFullName: "全名",
+    discoveryLegend: "您是如何知道我们的？", discFbAd: "Facebook 广告", discFbPage: "Facebook 主页 / Messenger", discGMaps: "Google 地图", discGSearch: "Google 搜索", discFamily: "家人 / 朋友", discWebsite: "网站", discOther: "其他", phFullName: "全名",
     s3Sub: "请告知治疗师需要了解的情况。",
     s4Title: "偏好设置", s4Sub: "帮助我们为您提供个性化服务。",
     s5Title: "治疗师建议", s5Sub: "仅供内部使用。", therapistPlaceholder: "护理记录与建议",
@@ -586,7 +595,7 @@ const TRANSLATIONS = {
     privacyStrong: "お客様の情報は厳重に管理されます。", privacyText: "印刷または保存を選択しない限り、このフォームはこの端末内にのみ保存されます。",
     s1Title: "施術を選択してください", s1Sub: "選択に応じて質問内容が変わります。",
     s2Title: "お客様情報", fCustomerName: "お名前", fDate: "日付", fAge: "年齢", fPhone: "連絡先電話番号", fDob: "生年月日", fEmail: "メールアドレス",
-    discoveryLegend: "当店をどこでお知りになりましたか？", discFamily: "家族・友人", discWebsite: "ウェブサイト", discOther: "その他", phFullName: "フルネーム",
+    discoveryLegend: "当店をどこでお知りになりましたか？", discFbAd: "Facebook広告", discFbPage: "Facebookページ / Messenger", discGMaps: "Googleマップ", discGSearch: "Google検索", discFamily: "家族・友人", discWebsite: "ウェブサイト", discOther: "その他", phFullName: "フルネーム",
     s3Sub: "施術者に伝えたいことがあればご記入ください。",
     s4Title: "ご希望", s4Sub: "より快適な施術のためにご希望をお聞かせください。",
     s5Title: "施術者からのおすすめ", s5Sub: "内部使用のみ。", therapistPlaceholder: "施術メモとおすすめ内容",
@@ -604,7 +613,7 @@ const TRANSLATIONS = {
     privacyStrong: "고객님의 정보는 안전하게 보호됩니다.", privacyText: "인쇄하거나 저장하지 않는 한 이 양식은 이 기기에만 보관됩니다.",
     s1Title: "서비스 선택", s1Sub: "선택하신 서비스에 따라 질문이 달라집니다.",
     s2Title: "고객 정보", fCustomerName: "고객 성함", fDate: "날짜", fAge: "나이", fPhone: "연락처", fDob: "생년월일", fEmail: "이메일 주소",
-    discoveryLegend: "저희를 어떻게 알게 되셨나요?", discFamily: "가족 / 친구", discWebsite: "웹사이트", discOther: "기타", phFullName: "성함",
+    discoveryLegend: "저희를 어떻게 알게 되셨나요?", discFbAd: "Facebook 광고", discFbPage: "Facebook 페이지 / Messenger", discGMaps: "Google 지도", discGSearch: "Google 검색", discFamily: "가족 / 친구", discWebsite: "웹사이트", discOther: "기타", phFullName: "성함",
     s3Sub: "테라피스트가 알아야 할 사항을 알려주세요.",
     s4Title: "선호 사항", s4Sub: "맞춤 서비스를 위해 알려주세요.",
     s5Title: "테라피스트 추천 사항", s5Sub: "내부용입니다.", therapistPlaceholder: "트리트먼트 메모 및 추천 사항",
@@ -622,7 +631,7 @@ const TRANSLATIONS = {
     privacyStrong: "Tu información es privada.", privacyText: "Este formulario permanece en este dispositivo a menos que elijas imprimirlo o guardarlo.",
     s1Title: "Elige tu servicio", s1Sub: "Las preguntas se ajustarán según tu selección.",
     s2Title: "Sobre ti", fCustomerName: "Nombre del cliente", fDate: "Fecha", fAge: "Edad", fPhone: "Número de contacto", fDob: "Fecha de nacimiento", fEmail: "Correo electrónico",
-    discoveryLegend: "¿Cómo nos conociste?", discFamily: "Familia / Amigos", discWebsite: "Sitio web", discOther: "Otro", phFullName: "Nombre completo",
+    discoveryLegend: "¿Cómo nos conociste?", discFbAd: "Anuncio de Facebook", discFbPage: "Página de Facebook / Messenger", discGMaps: "Google Maps", discGSearch: "Búsqueda en Google", discFamily: "Familia / Amigos", discWebsite: "Sitio web", discOther: "Otro", phFullName: "Nombre completo",
     s3Sub: "Comparte cualquier información que tu terapeuta deba conocer.",
     s4Title: "Preferencias", s4Sub: "Ayúdanos a personalizar tu visita.",
     s5Title: "Recomendaciones del terapeuta", s5Sub: "Solo para uso interno.", therapistPlaceholder: "Notas y recomendaciones del tratamiento",
@@ -640,7 +649,7 @@ const TRANSLATIONS = {
     privacyStrong: "Vos informations sont confidentielles.", privacyText: "Ce formulaire reste sur cet appareil, sauf si vous choisissez de l'imprimer ou de l'enregistrer.",
     s1Title: "Choisissez votre soin", s1Sub: "Les questions s'adapteront à votre choix.",
     s2Title: "À propos de vous", fCustomerName: "Nom du client", fDate: "Date", fAge: "Âge", fPhone: "Numéro de contact", fDob: "Date de naissance", fEmail: "Adresse e-mail",
-    discoveryLegend: "Comment nous avez-vous connus ?", discFamily: "Famille / Amis", discWebsite: "Site web", discOther: "Autre", phFullName: "Nom complet",
+    discoveryLegend: "Comment nous avez-vous connus ?", discFbAd: "Publicité Facebook", discFbPage: "Page Facebook / Messenger", discGMaps: "Google Maps", discGSearch: "Recherche Google", discFamily: "Famille / Amis", discWebsite: "Site web", discOther: "Autre", phFullName: "Nom complet",
     s3Sub: "Partagez toute information utile pour votre thérapeute.",
     s4Title: "Préférences", s4Sub: "Aidez-nous à personnaliser votre visite.",
     s5Title: "Recommandations du thérapeute", s5Sub: "Usage interne uniquement.", therapistPlaceholder: "Notes et recommandations de soin",
@@ -658,7 +667,7 @@ const TRANSLATIONS = {
     privacyStrong: "Ihre Daten bleiben vertraulich.", privacyText: "Dieses Formular verbleibt auf diesem Gerät, sofern Sie es nicht drucken oder speichern.",
     s1Title: "Wählen Sie Ihre Behandlung", s1Sub: "Die Fragen passen sich Ihrer Auswahl an.",
     s2Title: "Über Sie", fCustomerName: "Name des Kunden", fDate: "Datum", fAge: "Alter", fPhone: "Telefonnummer", fDob: "Geburtsdatum", fEmail: "E-Mail-Adresse",
-    discoveryLegend: "Wie haben Sie uns gefunden?", discFamily: "Familie / Freunde", discWebsite: "Webseite", discOther: "Sonstiges", phFullName: "Vollständiger Name",
+    discoveryLegend: "Wie haben Sie uns gefunden?", discFbAd: "Facebook-Anzeige", discFbPage: "Facebook-Seite / Messenger", discGMaps: "Google Maps", discGSearch: "Google-Suche", discFamily: "Familie / Freunde", discWebsite: "Webseite", discOther: "Sonstiges", phFullName: "Vollständiger Name",
     s3Sub: "Teilen Sie uns mit, was Ihre Therapeutin/Ihr Therapeut wissen sollte.",
     s4Title: "Vorlieben", s4Sub: "Helfen Sie uns, Ihren Besuch individuell zu gestalten.",
     s5Title: "Empfehlungen der Therapeutin/des Therapeuten", s5Sub: "Nur für den internen Gebrauch.", therapistPlaceholder: "Behandlungsnotizen und Empfehlungen",
@@ -676,7 +685,7 @@ const TRANSLATIONS = {
     privacyStrong: "Ваша информация конфиденциальна.", privacyText: "Эта форма остаётся на этом устройстве, если вы не решите её распечатать или сохранить.",
     s1Title: "Выберите услугу", s1Sub: "Вопросы изменятся в зависимости от вашего выбора.",
     s2Title: "О вас", fCustomerName: "Имя клиента", fDate: "Дата", fAge: "Возраст", fPhone: "Контактный номер", fDob: "Дата рождения", fEmail: "Электронная почта",
-    discoveryLegend: "Как вы о нас узнали?", discFamily: "Семья / Друзья", discWebsite: "Сайт", discOther: "Другое", phFullName: "Полное имя",
+    discoveryLegend: "Как вы о нас узнали?", discFbAd: "Реклама в Facebook", discFbPage: "Страница Facebook / Messenger", discGMaps: "Google Карты", discGSearch: "Поиск Google", discFamily: "Семья / Друзья", discWebsite: "Сайт", discOther: "Другое", phFullName: "Полное имя",
     s3Sub: "Сообщите терапевту всё, что ему следует знать.",
     s4Title: "Предпочтения", s4Sub: "Помогите нам сделать ваш визит индивидуальным.",
     s5Title: "Рекомендации терапевта", s5Sub: "Только для внутреннего использования.", therapistPlaceholder: "Заметки и рекомендации по процедуре",
@@ -694,7 +703,7 @@ const TRANSLATIONS = {
     privacyStrong: "As suas informações são privadas.", privacyText: "Este formulário permanece neste dispositivo, a menos que você opte por imprimi-lo ou salvá-lo.",
     s1Title: "Escolha o seu serviço", s1Sub: "As perguntas se ajustarão à sua escolha.",
     s2Title: "Sobre você", fCustomerName: "Nome do cliente", fDate: "Data", fAge: "Idade", fPhone: "Telefone de contato", fDob: "Data de nascimento", fEmail: "E-mail",
-    discoveryLegend: "Como você nos conheceu?", discFamily: "Família / Amigos", discWebsite: "Site", discOther: "Outro", phFullName: "Nome completo",
+    discoveryLegend: "Como você nos conheceu?", discFbAd: "Anúncio no Facebook", discFbPage: "Página do Facebook / Messenger", discGMaps: "Google Maps", discGSearch: "Pesquisa no Google", discFamily: "Família / Amigos", discWebsite: "Site", discOther: "Outro", phFullName: "Nome completo",
     s3Sub: "Compartilhe qualquer informação que o seu terapeuta deva saber.",
     s4Title: "Preferências", s4Sub: "Ajude-nos a personalizar a sua visita.",
     s5Title: "Recomendações do terapeuta", s5Sub: "Apenas para uso interno.", therapistPlaceholder: "Notas e recomendações do tratamento",
@@ -1091,6 +1100,19 @@ const KIOSK_HOME_URL = "https://nutopia-kiosk.vercel.app/";
 const QP = new URLSearchParams(location.search);
 const FROM_KIOSK = QP.get("from") === "kiosk";
 const KIOSK_IPAD = FROM_KIOSK && QP.get("kiosk") === "1";
+// Naka-embed sa ilalim ng kiosk Check In (iisang page sa mata ng client)
+const EMBED = QP.get("embed") === "1" && window.parent !== window;
+if (EMBED) {
+  document.documentElement.classList.add("embed");
+  const post = m => { try { window.parent.postMessage(m, "*"); } catch (e) {} };
+  let lastH = 0;
+  const sendH = () => { const h = Math.ceil(document.querySelector(".page-wrap, form, main") ? document.body.scrollHeight : document.documentElement.scrollHeight); if (Math.abs(h - lastH) > 8) { lastH = h; post({ type: "na-height", h }); } };
+  if (window.ResizeObserver) new ResizeObserver(sendH).observe(document.body);
+  window.addEventListener("load", sendH); setInterval(sendH, 1500);
+  let lastAct = 0;
+  ["input", "pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, () => { const n = Date.now(); if (n - lastAct > 5000) { lastAct = n; post({ type: "na-activity" }); } }, { passive: true }));
+  window.__naDone = () => post({ type: "na-done" });
+}
 const I18N_NAV = {"en": {"homeBtn": "Home", "thanksReturn": "Thank you! Returning to the home screen in {n} seconds.", "leaveWarn": "Leave this form? Your answers haven't been saved yet."}, "fil": {"homeBtn": "Home", "thanksReturn": "Salamat! Babalik sa home screen sa loob ng {n} segundo.", "leaveWarn": "Aalis sa form? Hindi pa naka-save ang iyong mga sagot."}, "zh": {"homeBtn": "首页", "thanksReturn": "谢谢！将在 {n} 秒后返回首页。", "leaveWarn": "确定离开吗？您的回答尚未保存。"}, "ja": {"homeBtn": "ホーム", "thanksReturn": "ありがとうございました！{n}秒後にホームに戻ります。", "leaveWarn": "このフォームを離れますか？回答はまだ保存されていません。"}, "ko": {"homeBtn": "홈", "thanksReturn": "감사합니다! {n}초 후 처음 화면으로 돌아갑니다.", "leaveWarn": "이 양식을 나가시겠습니까? 답변이 아직 저장되지 않았습니다."}, "es": {"homeBtn": "Inicio", "thanksReturn": "¡Gracias! Volviendo al inicio en {n} segundos.", "leaveWarn": "¿Salir del formulario? Sus respuestas aún no se han guardado."}, "fr": {"homeBtn": "Accueil", "thanksReturn": "Merci ! Retour à l'accueil dans {n} secondes.", "leaveWarn": "Quitter ce formulaire ? Vos réponses ne sont pas encore enregistrées."}, "de": {"homeBtn": "Start", "thanksReturn": "Vielen Dank! Zurück zur Startseite in {n} Sekunden.", "leaveWarn": "Formular verlassen? Ihre Antworten sind noch nicht gespeichert."}, "ru": {"homeBtn": "Главная", "thanksReturn": "Спасибо! Возврат на главную через {n} сек.", "leaveWarn": "Покинуть анкету? Ваши ответы ещё не сохранены."}, "pt": {"homeBtn": "Início", "thanksReturn": "Obrigado! Voltando ao início em {n} segundos.", "leaveWarn": "Sair do formulário? Suas respostas ainda não foram salvas."}, "it": {"homeBtn": "Home", "thanksReturn": "Grazie! Ritorno alla home tra {n} secondi.", "leaveWarn": "Uscire dal modulo? Le tue risposte non sono ancora state salvate."}, "vi": {"homeBtn": "Trang chủ", "thanksReturn": "Cảm ơn bạn! Quay về trang chủ sau {n} giây.", "leaveWarn": "Rời khỏi biểu mẫu? Câu trả lời của bạn chưa được lưu."}, "th": {"homeBtn": "หน้าแรก", "thanksReturn": "ขอบคุณ! จะกลับหน้าแรกใน {n} วินาที", "leaveWarn": "ออกจากแบบฟอร์มหรือไม่? คำตอบของคุณยังไม่ได้บันทึก"}, "id": {"homeBtn": "Beranda", "thanksReturn": "Terima kasih! Kembali ke beranda dalam {n} detik.", "leaveWarn": "Keluar dari formulir? Jawaban Anda belum disimpan."}, "hi": {"homeBtn": "होम", "thanksReturn": "धन्यवाद! {n} सेकंड में होम स्क्रीन पर लौटेंगे।", "leaveWarn": "फ़ॉर्म छोड़ें? आपके उत्तर अभी सेव नहीं हुए हैं।"}, "ar": {"homeBtn": "الرئيسية", "thanksReturn": "شكرًا لك! العودة إلى الشاشة الرئيسية خلال {n} ثانية.", "leaveWarn": "هل تريد مغادرة النموذج؟ لم يتم حفظ إجاباتك بعد."}};
 Object.keys(I18N_NAV).forEach(l => { TRANSLATIONS[l] = Object.assign({}, TRANSLATIONS[l] || {}, I18N_NAV[l]); });
 function kioskHomeUrl(){
@@ -1123,9 +1145,10 @@ document.getElementById("kiosk-nav").addEventListener("click", e => {
 langSelectEl.addEventListener("change", refreshKioskHome);
 refreshKioskHome();
 // Babala kapag napindot ang Back / isinara ang page habang may hindi pa naka-save na sagot
-window.addEventListener("beforeunload", e => { if (formDirty){ e.preventDefault(); e.returnValue = ""; } });
+window.addEventListener("beforeunload", e => { if (formDirty && !EMBED){ e.preventDefault(); e.returnValue = ""; } });
 let kioskReturnTimer = null;
 function kioskAfterSave(){
+  if (EMBED) { if (window.__naDone) window.__naDone(); return; } // ang kiosk na ang babalik sa home
   if (!KIOSK_IPAD) return;
   clearInterval(kioskReturnTimer);
   let left = 20;
@@ -1763,6 +1786,13 @@ function lockStaffDevice(){
 function applyStaffMode(){
   const wrap = document.querySelector(".client-lookup-wrap");
   if (wrap) wrap.style.display = isStaffDevice() ? "" : "none";
+  // "Therapist recommendations" — pang-staff lang; nakatago sa phone ng client
+  const tn = document.querySelector('[name="therapistNotes"]');
+  const tsec = tn && tn.closest(".form-section");
+  if (tsec) tsec.style.display = isStaffDevice() ? "" : "none";
+  const cc = document.getElementById("consent-check");
+  const cnum = cc && cc.closest(".form-section") && cc.closest(".form-section").querySelector(".section-number");
+  if (cnum) cnum.textContent = isStaffDevice() ? "06" : "05";
 }
 let recordsUnlocked = false;
 
@@ -2041,6 +2071,39 @@ async function prefetchRecordsQuietly(){
 }
 applyStaffMode();
 prefetchRecordsQuietly();
+// Link mula sa GHL bot/email: kusang lalagyan ang pangalan, phone at email
+(function prefillFromLink(){
+  const q = new URLSearchParams(location.search);
+  const f = document.getElementById("assessment-form"); if (!f) return;
+  const ok = v => { v = String(v || "").trim(); return v && !/\{\{.*\}\}/.test(v) ? v : ""; };
+  const set = (n, v) => { const el = f.elements[n]; if (el && !el.value && v) { el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); } };
+  const name = ok(q.get("name")) || [ok(q.get("first")), ok(q.get("last"))].filter(Boolean).join(" ");
+  set("customerName", name.slice(0, 80)); set("printedName", name.slice(0, 80));
+  let ph = ok(q.get("phone")).replace(/[^\d+]/g, "");
+  if (/^\+?63\d{10}$/.test(ph)) ph = "0" + ph.replace(/^\+?63/, "");
+  set("phone", ph.slice(0, 15));
+  const em = ok(q.get("email")); if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) set("email", em.slice(0, 120));
+  // Lead source mula sa kiosk Check In → lagyan ng check ang "How did you discover us?"
+  const SRC_MAP = { "Referral": "Family / Friends" };
+  const src = ok(q.get("src")); const val = SRC_MAP[src] || src;
+  const tick = v => { const cb = v && f.querySelector('input[type="checkbox"][name="discovery"][value="' + v.replace(/"/g, "") + '"]'); if (cb && !cb.checked){ cb.checked = true; cb.dispatchEvent(new Event("change", { bubbles: true })); } };
+  // Kasama ng nag-book (group): hindi na pipili ng Facebook atbp. — 1 lead lang ang nag-book
+  const gof = ok(q.get("guestof")).slice(0, 80);
+  if (gof){
+    tick("Kasama ng nag-book");
+    let hid = f.querySelector('input[name="guestOf"]');
+    if (!hid){ hid = document.createElement("input"); hid.type = "hidden"; hid.name = "guestOf"; f.appendChild(hid); }
+    hid.value = gof;
+    const note = document.createElement("div"); note.className = "guest-of-note";
+    note.textContent = "👥 " + (currentLang === "fil" ? "Kasama ni " : "Guest of ") + gof;
+    const anchor = f.querySelector(".client-lookup-wrap") || f.elements["customerName"].closest("label");
+    if (anchor) anchor.parentNode.insertBefore(note, anchor);
+  } else tick(val);
+  // Petsa ng visit at uri ng service mula sa Check In
+  const d = ok(q.get("date")); if (/^\d{4}-\d{2}-\d{2}$/.test(d)) set("date", d);
+  const sv = ok(q.get("svc"));
+  if (sv && services.includes(sv) && sv !== currentService){ currentService = sv; renderService(); renderQuestionSections(); }
+})();
 
 const clientSearchEl = document.getElementById("client-search");
 const clientSearchResultsEl = document.getElementById("client-search-results");
