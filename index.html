@@ -324,6 +324,16 @@
 .kiosk-nav svg{flex-shrink:0}
 body.has-kiosk-nav .top-rule{display:none}
 @media (max-width:360px){.kiosk-nav a{font-size:.85rem;gap:4px}.kiosk-nav svg{width:16px;height:16px}}
+.pin-bg{position:fixed;inset:0;z-index:9999;background:rgba(20,18,14,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.pin-box{background:var(--background,#fff);color:var(--foreground,#222);border-radius:16px;padding:22px 20px;width:min(340px,100%);box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.pin-title{font-size:1.05rem;font-weight:600;margin-bottom:6px}.pin-msg{font-size:.85rem;color:var(--muted-foreground,#666);margin-bottom:12px}
+.pin-input{width:100%;font-size:1.2rem;letter-spacing:.3em}
+.pin-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}.pin-btns button{border-radius:10px;padding:10px 16px;font:inherit;cursor:pointer;border:1px solid var(--border,#ccc);background:transparent;color:inherit}
+.pin-btns .pin-ok{background:var(--primary,#4f5a2f);color:var(--primary-foreground,#fff);border-color:transparent}
+@media print{body.print-record-mode > #staff-watermark{display:flex !important;position:fixed}}
+#staff-watermark{position:fixed;inset:-20%;z-index:10000;pointer-events:none;display:flex;flex-wrap:wrap;gap:70px 50px;align-content:flex-start;transform:rotate(-24deg);opacity:.13;overflow:hidden}
+#staff-watermark span{font:600 15px/1 system-ui,sans-serif;color:#000;white-space:nowrap}
+body.staff-unlocked #records-panel, body.staff-unlocked #record-detail-overlay, body.staff-unlocked .client-search-results{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 </style>
 <style>
 html.embed body{background:transparent!important;min-height:0!important}
@@ -1752,6 +1762,8 @@ setInterval(() => { if (navigator.onLine) flushQueue().then(flushPdfQueue); }, 3
 let recordsCache = [];
 
 function showNewAssessment(){
+  const fromRecords = document.getElementById("records-panel").style.display !== "none";
+  if (fromRecords){ lockStaffSession("leave"); return; } // galing sa Records: i-lock lang, huwag burahin ang form
   if (formDirty){
     const ok = window.confirm("This form has answers that have not been saved yet. Start a new form? Unsaved answers will be lost.");
     if (!ok) return;
@@ -1771,15 +1783,119 @@ function showNewAssessment(){
 // Ang staff PIN ay nasa Assessment Apps Script (STAFF_KEY) — hindi na nakasulat
 // dito sa HTML, kaya hindi ito makikita ng client kahit buksan ang page source.
 // Kapag tama ang PIN, naaalala ito ng device (hal. iPad sa front desk).
-const STAFF_KEY_STORE = "nutopia_staff_key";
-function getStaffKey(){ try { return localStorage.getItem(STAFF_KEY_STORE) || ""; } catch(e){ return ""; } }
-function isStaffDevice(){ return !!getStaffKey(); }
-function lockStaffDevice(){
-  try { localStorage.removeItem(STAFF_KEY_STORE); } catch(e){}
-  recordsCache = []; clientsIndex = {};
+// BAGO (ayon kay boss): HINDI na tinatandaan ng device ang PIN. Bawat bukas ng Records o
+// paghahanap ng returning client ay hihingi ng PIN. Kusang nala-lock kapag lumabas sa Records,
+// pagkatapos pumili ng client, walang galaw nang STAFF_IDLE_MS, o lumipat sa ibang app/tab.
+// Ang naaalala lang ng device ay na "staff device" ito (para lumabas ang search box at Therapist notes).
+const STAFF_KEY_STORE = "nutopia_staff_key";          // luma — binubura na
+const STAFF_DEVICE_STORE = "nutopia_staff_device";    // "1" = staff device (walang PIN na naka-save)
+const STAFF_IDLE_MS = 3 * 60 * 1000;                  // 3 minuto na walang galaw → lock
+let staffSessionKey = "", staffSessionName = "", staffSessionAt = "", staffIdleTimer = null;
+try { if (localStorage.getItem(STAFF_KEY_STORE)) { localStorage.setItem(STAFF_DEVICE_STORE, "1"); localStorage.removeItem(STAFF_KEY_STORE); } } catch(e){}
+function getStaffKey(){ return staffSessionKey; }
+function isStaffDevice(){ try { return localStorage.getItem(STAFF_DEVICE_STORE) === "1"; } catch(e){ return false; } }
+function staffUnlocked(){ return !!staffSessionKey; }
+function bumpStaffIdle(){
+  if (!staffSessionKey) return;
+  clearTimeout(staffIdleTimer);
+  staffIdleTimer = setTimeout(() => lockStaffSession("idle"), STAFF_IDLE_MS);
+}
+["pointerdown","keydown","scroll","touchstart"].forEach(ev => document.addEventListener(ev, bumpStaffIdle, { passive: true }));
+document.addEventListener("visibilitychange", () => { if (document.hidden) lockStaffSession("hidden"); });
+window.addEventListener("pagehide", () => lockStaffSession("hidden"));
+let staffPinPending = null;
+async function requireStaffPin(msg, why){
+  if (staffSessionKey) { bumpStaffIdle(); return true; }
+  if (staffPinPending) return staffPinPending; // iisang PIN prompt lang kahit ilang beses ma-trigger
+  staffPinPending = askStaffPin_(msg, why);
+  try { return await staffPinPending; } finally { staffPinPending = null; }
+}
+// PIN box na naka-tago ang letra (●●●●) — hindi gumagamit ng window.prompt na kita ang tinatype
+function pinDialog_(msg){
+  return new Promise(resolve => {
+    const bg = document.createElement("div");
+    bg.className = "pin-bg";
+    bg.innerHTML = `<form class="pin-box" autocomplete="off">
+      <div class="pin-title">🔒 Staff PIN</div>
+      <div class="pin-msg"></div>
+      <input type="password" class="field-input pin-input" inputmode="text" autocomplete="new-password" autocapitalize="off" spellcheck="false" aria-label="Staff PIN">
+      <div class="pin-btns"><button type="button" class="pin-cancel">Cancel</button><button type="submit" class="pin-ok">Unlock</button></div>
+    </form>`;
+    bg.querySelector(".pin-msg").textContent = msg;
+    document.body.appendChild(bg);
+    const inp = bg.querySelector(".pin-input");
+    const done = v => { bg.remove(); resolve(v); };
+    bg.querySelector("form").addEventListener("submit", e => { e.preventDefault(); done(inp.value); });
+    bg.querySelector(".pin-cancel").addEventListener("click", () => done(null));
+    bg.addEventListener("click", e => { if (e.target === bg) done(null); });
+    inp.addEventListener("keydown", e => { if (e.key === "Escape") done(null); });
+    setTimeout(() => inp.focus(), 30);
+  });
+}
+async function askStaffPin_(msg, why){
+  const entered = await pinDialog_(msg || "Enter your staff PIN to view client records:");
+  if (entered === null || entered === "") return false;
+  let who = "";
+  try {
+    const res = await fetch(CONFIG.SHEET_WEBHOOK_URL + "?action=verifyKey&why=" + encodeURIComponent(why || "records") + "&key=" + encodeURIComponent(entered));
+    const j = await res.json();
+    if (j && j.status === "blocked"){ alert("Too many wrong PINs. Records are blocked for 15 minutes."); return false; }
+    if (!j || j.status !== "ok"){ alert("Incorrect PIN."); return false; }
+    who = j.name || "Staff";
+  } catch(e){ alert("An internet connection is needed to check the PIN."); return false; }
+  staffSessionKey = entered; staffSessionName = who;
+  staffSessionAt = new Date().toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  showWatermark_();
+  try { localStorage.setItem(STAFF_DEVICE_STORE, "1"); } catch(e){}
   applyStaffMode();
-  showNewAssessment();
-  alert("Records are now locked on this device.");
+  bumpStaffIdle();
+  return true;
+}
+// Itinatala sa "Records Log" sheet kung ano ang tiningnan (pangalan ng client lang — walang health info)
+function logRecordView_(what, client, detail){
+  if (!staffSessionKey) return;
+  const q = "?action=logView&key=" + encodeURIComponent(staffSessionKey) + "&what=" + encodeURIComponent(what || "") +
+    "&client=" + encodeURIComponent(client || "") + "&detail=" + encodeURIComponent(detail || "");
+  fetch(CONFIG.SHEET_WEBHOOK_URL + q).catch(() => {});
+}
+// Watermark: pangalan ng nagbukas + oras, nakapatong sa buong screen habang naka-unlock
+function showWatermark_(){
+  hideWatermark_();
+  const w = document.createElement("div");
+  w.id = "staff-watermark"; w.setAttribute("aria-hidden", "true");
+  const txt = (staffSessionName || "Staff") + " · " + staffSessionAt + " · NUtopia confidential";
+  let h = ""; for (let i = 0; i < 60; i++) h += "<span></span>";
+  w.innerHTML = h;
+  w.querySelectorAll("span").forEach(sp => sp.textContent = txt);
+  document.body.appendChild(w);
+  document.body.classList.add("staff-unlocked");
+}
+function hideWatermark_(){ const w = document.getElementById("staff-watermark"); if (w) w.remove(); document.body.classList.remove("staff-unlocked"); }
+// I-lock: burahin ang PIN at lahat ng nakuhang records sa memory ng page
+function lockStaffSession(reason){
+  if (!staffSessionKey && !recordsCache.length) return;
+  staffSessionKey = ""; staffSessionName = ""; clearTimeout(staffIdleTimer);
+  hideWatermark_();
+  try { if (document.getElementById("record-detail-overlay")) closeRecordDetail(); } catch(e){}
+  recordsCache = []; clientsIndex = {};
+  Object.keys(parsedCache).forEach(k => delete parsedCache[k]); // pati ang na-parse na detalye
+  const res = document.getElementById("client-search-results");
+  if (res){ res.classList.remove("open"); res.innerHTML = ""; }
+  const panel = document.getElementById("records-panel");
+  if (panel && panel.style.display !== "none"){
+    panel.innerHTML = "";
+    switchToFormView();
+    if (reason === "idle") alert("Records locked (walang galaw nang 3 minuto). Ilagay ulit ang PIN para buksan.");
+  }
+}
+function lockStaffDevice(){ lockStaffSession("manual"); }
+function switchToFormView(){
+  document.getElementById("assessment-form").style.display = "";
+  document.getElementById("records-panel").style.display = "none";
+  document.getElementById("toggle-new").style.background = "var(--primary)";
+  document.getElementById("toggle-new").style.color = "var(--primary-foreground)";
+  document.getElementById("toggle-records").style.background = "transparent";
+  document.getElementById("toggle-records").style.color = "var(--primary)";
 }
 // Client phone: nakatago ang "search returning client" (para hindi makita ng
 // client ang pangalan/phone ng ibang clients). Staff device: nakikita.
@@ -1797,18 +1913,9 @@ function applyStaffMode(){
 let recordsUnlocked = false;
 
 async function showRecordsView(){
-  if (!isStaffDevice()){
-    const entered = window.prompt("Enter staff PIN to view client records:");
-    if (entered === null) return;
-    try {
-      const res = await fetch(CONFIG.SHEET_WEBHOOK_URL + "?action=verifyKey&key=" + encodeURIComponent(entered));
-      const j = await res.json();
-      if (!j || j.status !== "ok"){ alert("Incorrect PIN."); return; }
-    } catch(e){ alert("An internet connection is needed to check the PIN."); return; }
-    try { localStorage.setItem(STAFF_KEY_STORE, entered); } catch(e){}
-    applyStaffMode();
-    prefetchRecordsQuietly();
-  }
+  if (document.getElementById("records-panel").style.display !== "none" && staffUnlocked()) return;
+  lockStaffSession("reopen"); // laging bagong PIN sa bawat bukas
+  if (!(await requireStaffPin())) return;
   recordsUnlocked = true;
   document.getElementById("assessment-form").style.display = "none";
   document.getElementById("records-panel").style.display = "";
@@ -1824,7 +1931,7 @@ async function loadRecordsList(){
   panel.innerHTML = `
     <div class="records-search-wrap">
       <input type="text" id="records-search" class="field-input" placeholder="🔍 Type a name, phone, or serial number…" autocomplete="off">
-      <button type="button" class="text-button" style="margin-top:8px" onclick="lockStaffDevice()">🔒 Lock records on this device</button>
+      <button type="button" class="text-button" style="margin-top:8px" onclick="lockStaffDevice()">🔒 Lock records now</button> <span style="font-size:.72rem;color:var(--muted-foreground)">Kusang mala-lock pagkalabas dito o kapag 3 minutong walang galaw.</span>
     </div>
     <div id="records-list-container"><p style="color:var(--muted-foreground);padding-top:10px">Loading records…</p></div>`;
   document.getElementById("records-search").addEventListener("input", (e) => renderRecordsList(e.target.value));
@@ -1840,8 +1947,7 @@ async function fetchAssessments(){
   const res = await fetch(CONFIG.SHEET_WEBHOOK_URL + "?action=getAssessments&key=" + encodeURIComponent(getStaffKey()));
   const data = await res.json();
   if (data && data.status === "denied"){
-    try { localStorage.removeItem(STAFF_KEY_STORE); } catch(e){}
-    applyStaffMode();
+    lockStaffSession("denied");
     throw new Error("Incorrect or changed staff PIN");
   }
   recordsCache = (data && data.assessments) ? data.assessments : [];
@@ -1946,6 +2052,7 @@ function visitBodyHTML(r){
 function openClientProfile(clientId){
   const recs = recordsCache.filter(r => clientIdOf(r) === clientId).sort(sortNewest);
   if (!recs.length) return;
+  logRecordView_("Tiningnan ang record", recs[0].customerName || "", recs.length + " visit" + (recs.length === 1 ? "" : "s"));
   const latest = recs[0];
   const lp = parseRecord(latest);
   const first = recs[recs.length - 1];
@@ -1991,6 +2098,8 @@ function openClientProfile(clientId){
   overlay.scrollTop = 0;
 }
 function printRecordDetail(){
+  const t = document.querySelector("#record-detail-overlay h2, #record-detail-overlay h3");
+  logRecordView_("Nag-PRINT ng record", t ? t.textContent.trim() : "", "");
   // Buksan lahat ng visit para kasama sa print
   document.querySelectorAll("#record-detail-overlay details.visit").forEach(d => d.open = true);
   document.body.classList.add("print-record-mode");
@@ -2065,7 +2174,7 @@ function startAssessmentForClient(submissionId){
 // ============================================================
 async function prefetchRecordsQuietly(){
   if (!CONFIG.SHEET_WEBHOOK_URL || CONFIG.SHEET_WEBHOOK_URL.indexOf("PASTE_YOUR") === 0) return;
-  if (!isStaffDevice()) return; // client phone: walang kukuning records ng ibang clients
+  if (!isStaffDevice() || !staffUnlocked()) return; // walang PIN ngayon → walang kukuning records ng ibang clients
   try { await Promise.all([fetchAssessments(), fetchClientsIndex()]); }
   catch (err) { /* silent — search just won't have data yet */ }
 }
@@ -2132,7 +2241,16 @@ function unlinkClient(){
 }
 
 if (clientSearchEl && clientSearchResultsEl){
+  clientSearchEl.addEventListener("focus", async () => {
+    if (staffUnlocked()) return;
+    clientSearchEl.blur();
+    if (!(await requireStaffPin("Enter your staff PIN to search returning clients:", "search"))) return;
+    try { await Promise.all([fetchAssessments(), fetchClientsIndex()]); } catch(e){}
+    clientSearchEl.focus();
+    if (clientSearchEl.value.trim()) clientSearchEl.dispatchEvent(new Event("input"));
+  });
   clientSearchEl.addEventListener("input", () => {
+    if (!staffUnlocked()){ clientSearchResultsEl.classList.remove("open"); clientSearchResultsEl.innerHTML = ""; return; }
     const q = clientSearchEl.value.trim().toLowerCase();
     if (!q){ clientSearchResultsEl.classList.remove("open"); clientSearchResultsEl.innerHTML = ""; return; }
     const qDigits = q.replace(/\D/g, "");
@@ -2173,6 +2291,8 @@ if (clientSearchEl && clientSearchResultsEl){
     currentClientId = clientIdOf(record);
     setLinkedClientNote(currentClientId, parsed.customerName || record.customerName);
     formDirty = true;
+    logRecordView_("Ginamit sa search (returning client)", parsed.customerName || record.customerName || "", "");
+    lockStaffSession("used"); // one-time: pagkapili ng client, naka-lock na ulit ang history
   });
 
   document.addEventListener("click", (e) => {
