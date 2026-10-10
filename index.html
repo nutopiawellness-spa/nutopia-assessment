@@ -343,6 +343,24 @@ body.staff-unlocked #records-panel, body.staff-unlocked #record-detail-overlay, 
 #save-btn.nudge.strong{animation-duration:1.05s!important;margin-top:34px}
 #save-btn.nudge.strong::after{content:"👇";position:absolute;left:50%;top:-38px;font-size:28px;line-height:1;animation:saveHand .9s ease-in-out infinite!important;pointer-events:none}
 @media print{#save-btn.nudge{animation:none!important}}
+
+/* ── Therapist field ── */
+.th-pick{display:grid;gap:8px;margin-bottom:16px}
+.th-label{font-weight:600;font-size:.86rem}
+.th-label small{font-weight:400;color:var(--muted-foreground)}
+.th-chips{display:flex;flex-wrap:wrap;gap:8px}
+.th-chip{min-height:42px;padding:8px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card);font:inherit;font-size:.86rem;cursor:pointer}
+.th-chip.on{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground);font-weight:600}
+.th-chip.other{border-style:dashed}
+.th-loading,.th-auto{font-size:.76rem;color:var(--muted-foreground)}
+.th-auto b{color:var(--primary)}
+.th-line{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:2px 0 6px}
+.th-line .th-names{font-weight:600}
+.th-modal{position:fixed;inset:0;z-index:10001;background:rgba(20,18,14,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.th-box{background:var(--card,#fff);border-radius:14px;padding:20px;max-width:440px;width:100%;display:grid;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.th-box h3{margin:0;font-size:1.05rem}
+.th-box .row{display:flex;gap:10px;justify-content:flex-end}
+@media print{.th-edit{display:none!important}}
 </style>
 <style>
 html.embed body{background:transparent!important;min-height:0!important}
@@ -459,6 +477,12 @@ html.embed body.has-kiosk-nav{padding-top:0!important;padding-bottom:0!important
       <div><h2 data-i18n="s5Title">Therapist recommendations</h2><p data-i18n="s5Sub">For internal use only.</p></div>
     </header>
     <div class="section-content">
+      <div class="th-pick">
+        <span class="th-label">👤 Therapist <small>(pumili ng 1–2 · puwedeng palitan mamaya)</small></span>
+        <div class="th-chips" id="th-chips"><span class="th-loading">Loading therapists…</span></div>
+        <input type="hidden" name="therapist" id="therapist-input">
+        <div class="th-auto" id="th-auto"></div>
+      </div>
       <textarea class="field-input" name="therapistNotes" style="min-height:140px; resize:vertical;" aria-label="Therapist recommendations" data-i18n-placeholder="therapistPlaceholder" placeholder="Treatment notes and recommendations"></textarea>
     </div>
   </section>
@@ -1767,6 +1791,114 @@ setInterval(() => {
   b.classList.toggle("nudge", on);
   b.classList.toggle("strong", on && !!signed);
 }, 400);
+
+// ============================================================
+// THERAPIST FIELD — 1–2 therapist bawat visit (hindi permanente sa client).
+// Auto-fill mula sa booking sa scheduler (parehong araw + phone/pangalan); puwedeng palitan.
+// Puwedeng i-encode/palitan mamaya sa Records (kailangan ng PIN, naka-log).
+// ============================================================
+const TH_MAX = 3;
+let therapistList = [], thPicked = [], thManual = false, thAutoTimer = null, thAutoKey = "";
+const thInput = document.getElementById("therapist-input");
+function thSync(){ thInput.value = thPicked.join(", "); }
+function renderThChips(){
+  const box = document.getElementById("th-chips"); if (!box) return;
+  const all = therapistList.concat(thPicked.filter(n => therapistList.indexOf(n) < 0));
+  box.innerHTML = all.map(n => `<button type="button" class="th-chip${thPicked.indexOf(n) >= 0 ? " on" : ""}" data-th="${esc(n)}">${esc(n)}</button>`).join("")
+    + `<button type="button" class="th-chip other" data-th-other="1">+ Iba</button>`;
+}
+function thToggle(list, n){
+  const i = list.indexOf(n);
+  if (i >= 0) list.splice(i, 1);
+  else { if (list.length >= TH_MAX) list.shift(); list.push(n); }
+}
+document.getElementById("th-chips").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.thOther){ const n = (prompt("Pangalan ng therapist:") || "").trim().slice(0, 40); if (!n) return; if (thPicked.indexOf(n) < 0) thToggle(thPicked, n); }
+  else thToggle(thPicked, b.dataset.th);
+  thManual = true; thSync(); renderThChips();
+  document.getElementById("th-auto").textContent = "";
+  formDirty = true;
+});
+async function loadTherapists(){
+  try {
+    const r = await fetch(CONFIG.SHEET_WEBHOOK_URL + "?action=therapists");
+    const j = await r.json();
+    therapistList = (j && Array.isArray(j.therapists)) ? j.therapists : [];
+  } catch(e){ therapistList = []; }
+  renderThChips();
+}
+// Petsa ng "business day" (bago mag-5 AM = kahapon pa), pareho sa scheduler
+function thBizDate(){
+  const now = new Date(Date.now() + 8 * 3600e3 - 5 * 3600e3); // Manila, minus 5 oras
+  return now.toISOString().slice(0, 10);
+}
+function scheduleThAuto(){ clearTimeout(thAutoTimer); thAutoTimer = setTimeout(thAutoFill, 900); }
+async function thAutoFill(){
+  if (thManual) return;
+  const f = assessmentFormEl;
+  const name = (f.elements["customerName"] || {}).value || "", phone = (f.elements["phone"] || {}).value || "";
+  const date = ((f.elements["date"] || {}).value || "") || thBizDate();
+  if (String(phone).replace(/\D/g, "").length < 7 && name.trim().length < 3) return;
+  const key = [name.trim().toLowerCase(), phone.replace(/\D/g, ""), date].join("|");
+  if (key === thAutoKey) return; thAutoKey = key;
+  try {
+    const r = await fetch(CONFIG.SHEET_WEBHOOK_URL + "?action=bookingTherapist&date=" + encodeURIComponent(date) + "&phone=" + encodeURIComponent(phone) + "&name=" + encodeURIComponent(name));
+    const j = await r.json();
+    if (thManual || !j || !Array.isArray(j.therapists) || !j.therapists.length) return;
+    thPicked = j.therapists.slice(0, TH_MAX); thSync(); renderThChips();
+    document.getElementById("th-auto").innerHTML = "✓ Galing sa schedule: <b>" + esc(thPicked.join(", ")) + "</b> — i-tap para palitan.";
+  } catch(e){}
+}
+["customerName", "phone", "date"].forEach(n => { const el = assessmentFormEl.elements[n]; if (el){ el.addEventListener("input", scheduleThAuto); el.addEventListener("change", scheduleThAuto); } });
+assessmentFormEl.addEventListener("reset", () => setTimeout(() => {
+  thPicked = []; thManual = false; thAutoKey = ""; thSync(); renderThChips();
+  document.getElementById("th-auto").textContent = "";
+}, 0));
+loadTherapists();
+setTimeout(scheduleThAuto, 300); // kapag galing sa kiosk Check In (may pangalan/phone na)
+
+// Records: palitan / i-encode ang therapist ng naka-save nang assessment
+function editTherapist(submissionId){
+  const r = recordsCache.find(x => x.submissionId === submissionId); if (!r) return;
+  if (!staffUnlocked()){ alert("Naka-lock ang Records. Buksan ulit gamit ang PIN."); return; }
+  let pick = String(parseRecord(r).therapist || "").split(",").map(x => x.trim()).filter(Boolean);
+  const bg = document.createElement("div"); bg.className = "th-modal";
+  const draw = () => {
+    const all = therapistList.concat(pick.filter(n => therapistList.indexOf(n) < 0));
+    bg.innerHTML = `<div class="th-box" role="dialog" aria-label="Therapist">
+      <h3>👤 Therapist — ${esc(r.customerName || "")}</h3>
+      <div style="font-size:.78rem;color:var(--muted-foreground)">${esc(r.date || (r.submittedAt || "").slice(0,10))} · ${esc(r.service || "")} · pumili ng 1–2</div>
+      <div class="th-chips">${all.map(n => `<button type="button" class="th-chip${pick.indexOf(n) >= 0 ? " on" : ""}" data-th="${esc(n)}">${esc(n)}</button>`).join("")}<button type="button" class="th-chip other" data-th-other="1">+ Iba</button></div>
+      <div class="th-auto" id="th-edit-msg"></div>
+      <div class="row"><button type="button" class="button secondary" data-x="1">Cancel</button><button type="button" class="button primary" data-save="1">Save</button></div>
+    </div>`;
+  };
+  draw(); document.body.appendChild(bg);
+  bg.addEventListener("click", async e => {
+    bumpStaffIdle();
+    const b = e.target.closest("button");
+    if (e.target === bg || (b && b.dataset.x)) { bg.remove(); return; }
+    if (!b) return;
+    if (b.dataset.thOther){ const n = (prompt("Pangalan ng therapist:") || "").trim().slice(0, 40); if (n && pick.indexOf(n) < 0) thToggle(pick, n); draw(); return; }
+    if (b.dataset.th){ thToggle(pick, b.dataset.th); draw(); return; }
+    if (b.dataset.save){
+      b.disabled = true; const msg = bg.querySelector("#th-edit-msg"); msg.textContent = "Saving…";
+      try {
+        const res = await fetch(CONFIG.SHEET_WEBHOOK_URL, { method: "POST", body: JSON.stringify({ action: "setTherapist", key: getStaffKey(), submissionId, therapist: pick.join(", ") }) });
+        const j = await res.json();
+        if (j && j.status === "denied"){ msg.textContent = "Mali o nag-expire ang PIN."; b.disabled = false; return; }
+        if (!j || j.status !== "ok") throw new Error(j && j.msg || "error");
+        let o = {}; try { o = JSON.parse(r.dataJson || "{}"); } catch(_){}
+        o.therapist = j.therapist; r.dataJson = JSON.stringify(o); delete parsedCache[r.submissionId];
+        const v = j.therapist || "";
+        const el = document.getElementById("thn-" + submissionId); if (el) el.textContent = v || "—";
+        document.querySelectorAll('.v-th[data-th="' + submissionId + '"]').forEach(x => { x.textContent = v ? " · 👤 " + v : ""; });
+        bg.remove();
+      } catch(err){ msg.textContent = "Hindi na-save — pakicheck ang internet at subukan ulit."; b.disabled = false; }
+    }
+  });
+}
 window.addEventListener("online", () => { updateSyncStatus(); flushQueue().then(flushPdfQueue); });
 window.addEventListener("offline", updateSyncStatus);
 updateSyncStatus();
@@ -1947,7 +2079,7 @@ async function loadRecordsList(){
   const panel = document.getElementById("records-panel");
   panel.innerHTML = `
     <div class="records-search-wrap">
-      <input type="text" id="records-search" class="field-input" placeholder="🔍 Type a name, phone, or serial number…" autocomplete="off">
+      <input type="text" id="records-search" class="field-input" placeholder="🔍 Type a name, phone, serial number or therapist…" autocomplete="off">
       <button type="button" class="text-button" style="margin-top:8px" onclick="lockStaffDevice()">🔒 Lock records now</button> <span style="font-size:.72rem;color:var(--muted-foreground)">Kusang mala-lock pagkalabas dito o kapag 3 minutong walang galaw.</span>
     </div>
     <div id="records-list-container"><p style="color:var(--muted-foreground);padding-top:10px">Loading records…</p></div>`;
@@ -2016,6 +2148,7 @@ function renderRecordsList(filterText){
       (r.customerName || "").toLowerCase().includes(q) ||
       (r.email || "").toLowerCase().includes(q) ||
       (r.serialNumber || "").toLowerCase().includes(q) ||
+      String(parseRecord(r).therapist || "").toLowerCase().includes(q) ||
       (qDigits.length >= 3 && String(r.phone || "").replace(/\D/g, "").includes(qDigits))
     ));
   }
@@ -2029,7 +2162,7 @@ function renderRecordsList(filterText){
       <button type="button" class="client-card" onclick="openClientProfile('${esc(c.id)}')">
         <span class="cc-main">
           <span class="cc-name">${esc(c.name)}</span>
-          <span class="cc-meta">${esc(c.phone)}${c.phone ? " · " : ""}Last visit ${esc(c.latest.date || (c.latest.submittedAt || "").slice(0,10))} · ${esc(c.latest.service || "")}</span>
+          <span class="cc-meta">${esc(c.phone)}${c.phone ? " · " : ""}Last visit ${esc(c.latest.date || (c.latest.submittedAt || "").slice(0,10))} · ${esc(c.latest.service || "")}${parseRecord(c.latest).therapist ? " · 👤 " + esc(parseRecord(c.latest).therapist) : ""}</span>
         </span>
         <span class="cc-count">${c.recs.length}<small>visit${c.recs.length === 1 ? "" : "s"}</small></span>
       </button>`).join("")}`;
@@ -2059,6 +2192,8 @@ function visitBodyHTML(r){
     ${s.marks.length ? `<h4>Marked areas</h4><div class="mark-grid">${s.marks.map(m => `<figure><img src="${m.src}" alt=""><figcaption>${esc(m.label)}</figcaption></figure>`).join("")}</div>` : ""}
     <h4>Preferences</h4>
     ${qaListHTML(s.prefs)}
+    <h4>Therapist</h4>
+    <div class="th-line"><span class="th-names" id="thn-${esc(r.submissionId)}">${esc(parseRecord(r).therapist || "—")}</span><button type="button" class="text-button th-edit" onclick="editTherapist('${esc(r.submissionId)}')">✏️ Palitan / i-encode</button></div>
     <h4>Therapist recommendations</h4>
     <div class="notes-box">${esc(s.notes) || "—"}</div>
     <h4>Consent</h4>
@@ -2079,7 +2214,7 @@ function openClientProfile(clientId){
     <details class="visit" ${idx === 0 ? "open" : ""}>
       <summary>
         <span class="v-num">#${recs.length - idx}</span>
-        <span class="v-title">${esc(r.date || (r.submittedAt || "").slice(0,10))} — ${esc(r.service || "")}</span>
+        <span class="v-title">${esc(r.date || (r.submittedAt || "").slice(0,10))} — ${esc(r.service || "")}<span class="v-th" data-th="${esc(r.submissionId)}">${parseRecord(r).therapist ? " · 👤 " + esc(parseRecord(r).therapist) : ""}</span></span>
         <span class="v-serial">${esc(r.serialNumber || "")}</span>
       </summary>
       <div class="visit-body">${visitBodyHTML(r)}</div>
@@ -2157,7 +2292,7 @@ function startAssessmentForClient(submissionId){
 
     const skipFields = ["signatureImage","faceMarkImage","bodyFrontMarkImage","bodyBackMarkImage",
       "nailShapeMarkImage","nailLengthMarkImage","submissionId","dataJson","action","recipientEmail",
-      "serialNumber","submittedAt","consent","service","clientId","date","dateSigned","therapistNotes"];
+      "serialNumber","submittedAt","consent","service","clientId","date","dateSigned","therapistNotes","therapist"];
 
     Object.keys(parsed).forEach(key => {
       if (skipFields.includes(key) || !parsed[key]) return;
