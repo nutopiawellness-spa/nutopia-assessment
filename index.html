@@ -1804,18 +1804,30 @@ setInterval(() => {
 // TREATMENT + TAGAL (walang presyo) — galing sa menu ng scheduler; auto-fill mula sa booking
 // ============================================================
 const TREATMENTS = {"Therapeutic Massage":[["Swedish Massage",[60,90,120]],["Aromatherapy",[60,90,120]],["Balinese Massage",[60,90,120]],["Back Massage",[30,60,90,120]],["Head Massage",[30,60,90,120]],["Foot Reflexology",[30,60,90,120]],["Hand & Foot Massage",[60,90,120]],["Hand Massage",[60,90,120]],["Signature Combination",[60,90,120]],["Shiatsu",[60,90,120]],["Deep Tissue",[60,90,120]],["Thai Massage",[60,90,120]],["Slimming Massage",[30,60,90]],["Hilot",[60,90,120]],["Ventosa",[60,90,120]],["Hot Stone",[90,120]],["Lymphatic Drainage Massage",[60,90,120]]],"Facial Treatment":[["Hydra Facial",[60]],["HIFU",[90]],["Eye Treatment",[30]],["Express Facial",[30]],["Prestige Essential Facial",[60]],["Eye Contour",[60]],["White and Glow",[60]],["Collagen Enriching Facial",[60]],["Nourishing (Acne Treatment)",[60]],["Illuminating (Glow)",[60]],["Ultimate Diamond Peel",[60]],["Ultrasonic Wonder Lift",[60]],["24k Gold Facial",[60]],["Ultrasonic Facial",[60]],["Ionic Collagen Booster",[60]],["Advanced Regimen by NU Skin",[60]],["Facial Add-on (Cucumber/Whitening/Collagen)",[60]]],"Nail Care & Grooming":[["Classic Hand Clean",[45]],["Classic Foot Clean",[45]],["Classic Hand & Foot Clean",[90]],["Signature Manicure",[45]],["Signature Pedicure",[45]],["Signature Manicure & Pedicure",[120]],["Nail Art & Design",[120]],["Gellific Manicure",[90]],["Gellific Pedicure",[90]],["Gellific Manicure & Pedicure",[150]],["Gel Removal (w/ Cleaning)",[90]],["Nail Art Sticker",[240]],["Acrylic Nails",[240]],["Hard Gel Nail",[240]],["Acrygel",[240]],["Dipping Powder",[240]]],"Hand & Foot Services":[["Hand Spa w/ Paraffin & Massage",[60]],["Hand Spa w/ Massage",[60]],["Hand Spa w/ Manicure",[60]],["Foot Spa w/ Paraffin & Massage",[60]],["Foot Spa w/ Massage",[60]],["Foot Spa w/ Pedicure",[90]]],"Beauty Services":[["Waxing - Upper Lip",[60]],["Waxing - Eyebrow Wax/Thread",[60]],["Waxing - Underarm",[60]],["Waxing - Arm",[60]],["Waxing - Trimming",[60]],["Waxing - Leg",[60]],["Waxing - Back Area",[60]],["Waxing - Brazilian",[90]],["Waxing - Whole Body",[180]],["Eyelash Extension - Natural Look",[60]],["Eyelash Extension - Open Eye",[60]],["Eyelash Extension - Cat Eye",[60]],["Bleaching - Whole Body",[60]],["Bleaching - Body w/ Scrub",[120]],["Bleaching - Underarm",[30]],["Bleaching - Arms",[30]],["Bleaching - Legs",[60]],["Bleaching - Add-on Scrub",[30]],["Gluta Body Wrap",[30]],["RF Treatment - Jawline/Neck",[30]],["RF Treatment - Forehead",[30]],["RF Treatment - Undereye",[30]],["RF Treatment - Legs",[30]],["RF Treatment - Arms",[30]],["RF Treatment - Face",[30]],["RF Treatment - Tummy",[30]],["RF Treatment - Whole Body",[30]]],"Scrubs & Sauna":[["Sauna",[30]],["Whole Body Scrub",[60]],["Body Scrub w/ Body Mask",[60]],["Body Scrub w/ Sauna",[90]],["Back Cleaning",[45]]],"Body Treatment":[["Hydrotherapy/Jacuzzi w/ Full Body Massage",[90]],["Hydrotherapy/Jacuzzi w/ Sauna & Body Massage",[120]],["Hydrotherapy/Jacuzzi w/ Scrub & 1hr Massage",[150]],["Hydrotherapy/Jacuzzi w/ Sauna Scrub & 1hr Massage",[180]],["Hot Wrap",[45]],["G5 Body Contouring",[45]]],"Promos & Packages":[["Promo 1 - Foot Spa & Mani-Pedi",[120]],["Promo 2 - Body Scrub & 60min Massage",[120]],["Promo 3 - Hand/Foot Spa, Hand/Foot Massage & 90min Massage",[150]],["Hand Spa & 90min Massage",[120]],["Foot Spa & 90min Massage",[120]],["Promo 4 - Signature Diamond Peel & 60min Massage",[120]],["Promo 5 - Ultrasonic Wonder Lift & Eye Contour",[90]],["Mix & Match Combo",[90]],["Relax & Glow - Deep Cleansing Facial + Whole Body Massage",[120]],["Couple Package 1 - Sauna & 90min Massage",[120]],["Couple Package 2 - Foot Spa & 60min Massage",[120]],["Couple Package 3 - Scrub Massage Facial",[120]],["Couple Package 4 - Foot Spa Massage Ear Candling",[120]],["Couple Package 5 - Sauna Massage Diamond Facial",[150]],["Spa Party - Classic Spa",[150]],["Spa Party - Elite Spa",[150]],["Spa Party - Majestic Spa",[150]],["Spa Party - Deluxe Spa",[240]],["Corporate - Wellness Revolution",[120]],["Corporate - Radiant Retreats",[60]],["Corporate - Wellness Wonders",[120]],["Corporate - Getaway Retreat",[120]]]};
-const TR_ORDER = { Massage: ["Therapeutic Massage","Body Treatment","Scrubs & Sauna","Promos & Packages"], Facial: ["Facial Treatment","Promos & Packages"],
-  Nails: ["Nail Care & Grooming","Hand & Foot Services","Promos & Packages"], Waxing: ["Beauty Services"] };
+// Treatment list ayon sa napiling tab (Facial/Massage/Nails/Waxing) — para hindi magkamali ng pili
+const TR_BY_SVC = {
+  Massage: { cats: ["Therapeutic Massage","Body Treatment","Scrubs & Sauna"], promo: /massage|sauna|scrub|jacuzzi|hydro/i },
+  Facial:  { cats: ["Facial Treatment"], promo: /facial|peel|lift|glow|eye contour/i },
+  Nails:   { cats: ["Nail Care & Grooming","Hand & Foot Services"], promo: /mani|pedi|foot spa|hand spa/i },
+  Waxing:  { cats: ["Beauty Services"], promo: null }
+};
+function trGroups(svc){
+  const cfg = TR_BY_SVC[svc];
+  if (!cfg) return Object.keys(TREATMENTS).map(c => [c, TREATMENTS[c]]);
+  const g = cfg.cats.filter(c => TREATMENTS[c]).map(c => [c, TREATMENTS[c]]);
+  if (cfg.promo && TREATMENTS["Promos & Packages"]) { const pr = TREATMENTS["Promos & Packages"].filter(x => cfg.promo.test(x[0])); if (pr.length) g.push(["Promos & Packages", pr]); }
+  return g;
+}
 function trDurs(name){ for (const c in TREATMENTS){ const f = TREATMENTS[c].find(x => x[0] === name); if (f) return f[1]; } return []; }
+function trInList(name, svc){ return trGroups(svc).some(g => g[1].some(x => x[0] === name)); }
 function trText(p){ return [p.treatment, p.duration].filter(Boolean).join(" · "); }
 function visitExtra(p){ const t = trText(p); return (t ? " · " + t : "") + (p.therapist ? " · 👤 " + p.therapist : ""); }
-function trOptionsHTML(selected){
-  const pri = TR_ORDER[currentService] || [];
-  const cats = pri.concat(Object.keys(TREATMENTS).filter(c => pri.indexOf(c) < 0));
-  const known = cats.some(c => TREATMENTS[c].some(x => x[0] === selected));
-  return `<option value="">— Pumili ng treatment —</option>`
+function trOptionsHTML(selected, svc){
+  svc = svc || currentService;
+  const known = trInList(selected, svc);
+  return `<option value="">— Pumili ng ${esc(svc || "")} treatment —</option>`
     + (selected && !known ? `<option value="${esc(selected)}">${esc(selected)}</option>` : "")
-    + cats.map(c => `<optgroup label="${esc(c)}">${TREATMENTS[c].map(x => `<option value="${esc(x[0])}">${esc(x[0])}</option>`).join("")}</optgroup>`).join("")
+    + trGroups(svc).map(g => `<optgroup label="${esc(g[0])}">${g[1].map(x => `<option value="${esc(x[0])}">${esc(x[0])}</option>`).join("")}</optgroup>`).join("")
     + `<option value="__other">✎ Iba (i-type)…</option>`;
 }
 function durChipsHTML(name, cur){
@@ -1829,7 +1841,7 @@ function trWire(sel, chips, getDur, setDur, onChange){
   sel.addEventListener("change", () => {
     if (sel.value === "__other"){
       const n = (prompt("Pangalan ng treatment:") || "").trim().slice(0, 120);
-      sel.innerHTML = trOptionsHTML(n); sel.value = n;
+      sel.innerHTML = trOptionsHTML(n, sel.dataset.svc || currentService); sel.value = n;
     }
     const d = trDurs(sel.value); setDur(d.length === 1 ? d[0] + " min" : "");
     chips.innerHTML = durChipsHTML(sel.value, getDur()); onChange && onChange();
@@ -1843,7 +1855,12 @@ function trWire(sel, chips, getDur, setDur, onChange){
 }
 const trSel = document.getElementById("tr-select"), durChips = document.getElementById("dur-chips"), durInput = document.getElementById("duration-input");
 let trManual = false, trSvcSeen = "";
-function trRender(){ const v = trSel.value; trSel.innerHTML = trOptionsHTML(v); trSel.value = v; durChips.innerHTML = durChipsHTML(v, durInput.value); trSvcSeen = currentService; }
+function trRender(){
+  let v = trSel.value;
+  // Lumipat ng tab (hal. Massage → Facial) at hindi tugma ang napili → burahin para walang mali
+  if (v && trSvcSeen && currentService !== trSvcSeen && trDurs(v).length && !trInList(v, currentService)){ v = ""; durInput.value = ""; }
+  trSel.innerHTML = trOptionsHTML(v); trSel.value = v; durChips.innerHTML = durChipsHTML(v, durInput.value); trSvcSeen = currentService;
+}
 function trSet(name, dur){ trSel.innerHTML = trOptionsHTML(name); trSel.value = name; durInput.value = dur || ""; durChips.innerHTML = durChipsHTML(name, durInput.value); }
 trWire(trSel, durChips, () => durInput.value, v => { durInput.value = v; }, () => { trManual = true; formDirty = true; });
 trRender();
@@ -1939,7 +1956,7 @@ function editTherapist(submissionId){
       <h3>✏️ Visit details — ${esc(r.customerName || "")}</h3>
       <div style="font-size:.78rem;color:var(--muted-foreground)">${esc(r.date || (r.submittedAt || "").slice(0,10))} · ${esc(r.service || "")} assessment</div>
       <span class="th-label">💆 Treatment</span>
-      <select class="field-input" id="tr-edit-sel">${trOptionsHTML(trName)}</select>
+      <select class="field-input" id="tr-edit-sel" data-svc="${esc(r.service || "")}">${trOptionsHTML(trName, r.service || "")}</select>
       <span class="th-label">⏱ Tagal</span>
       <div class="th-chips" id="tr-edit-dur">${durChipsHTML(trName, trDur)}</div>
       <span class="th-label">👤 Therapist</span>
