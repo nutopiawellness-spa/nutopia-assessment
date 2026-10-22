@@ -428,7 +428,9 @@ html.embed body.has-kiosk-nav{padding-top:0!important;padding-bottom:0!important
         <div id="client-search-results" class="client-search-results"></div>
       </div>
       <div class="field-grid">
-        <label class="field-label"><span data-i18n="fCustomerName">Customer name</span><input class="field-input" name="customerName" type="text" data-i18n-placeholder="phFullName" placeholder="Full name"></label>
+        <label class="field-label"><span>First name</span><input class="field-input" name="firstName" type="text" placeholder="e.g. Maria" autocapitalize="words" autocomplete="off"></label>
+        <label class="field-label"><span>Last name</span><input class="field-input" name="lastName" type="text" placeholder="e.g. Santos" autocapitalize="words" autocomplete="off"></label>
+        <input name="customerName" type="text" tabindex="-1" aria-hidden="true" autocomplete="off" style="display:none">
         <label class="field-label"><span data-i18n="fDate">Date</span><input class="field-input" name="date" type="date"></label>
         <label class="field-label"><span data-i18n="fAge">Age</span><input class="field-input" name="age" type="number"></label>
         <label class="field-label"><span data-i18n="fPhone">Contact number</span><input class="field-input" name="phone" type="tel"></label>
@@ -2583,5 +2585,31 @@ if (clientSearchEl && clientSearchResultsEl){
 
 
 
+<script>
+// ── FIRST NAME + LAST NAME (pinagsasama sa "customerName" para hindi magbago ang Sheet, PDF at records) ──
+(function(){
+  const f = document.getElementById("assessment-form"); if (!f) return;
+  const full = f.elements["customerName"], fn = f.elements["firstName"], ln = f.elements["lastName"];
+  if (!full || !fn || !ln) return;
+  const desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+  let syncing = false;
+  const split = v => { const w = String(v || "").trim().split(/\s+/).filter(Boolean); return w.length > 1 ? [w.slice(0, -1).join(" "), w[w.length - 1]] : [w[0] || "", ""]; };
+  // kapag nilagyan ng ibang code ang customerName (hal. returning client), hatiin sa First / Last
+  Object.defineProperty(full, "value", {
+    get(){ return desc.get.call(this); },
+    set(v){ desc.set.call(this, v); if (syncing) return; const [a, b] = split(v); desc.set.call(fn, a); desc.set.call(ln, b); },
+    configurable: true
+  });
+  const join = () => { syncing = true; desc.set.call(full, [fn.value.trim(), ln.value.trim()].filter(Boolean).join(" ")); syncing = false;
+    full.dispatchEvent(new Event("input", { bubbles: true })); full.dispatchEvent(new Event("change", { bubbles: true })); };
+  fn.addEventListener("input", join); ln.addEventListener("input", join);
+  // link mula sa kiosk: ?first=&last= → eksaktong hati
+  const q = new URLSearchParams(location.search), clean = v => { v = String(v || "").trim(); return v && !/\{\{.*\}\}/.test(v) ? v.slice(0, 40) : ""; };
+  const qf = clean(q.get("first")), ql = clean(q.get("last"));
+  if (qf || ql){ desc.set.call(fn, qf); desc.set.call(ln, ql); join(); }
+  else if (desc.get.call(full)) { const [a, b] = split(desc.get.call(full)); desc.set.call(fn, a); desc.set.call(ln, b); }
+  f.addEventListener("reset", () => setTimeout(() => { desc.set.call(fn, ""); desc.set.call(ln, ""); }, 0));
+})();
+</script>
 </body>
 </html>
