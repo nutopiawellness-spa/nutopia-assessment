@@ -428,14 +428,14 @@ html.embed body.has-kiosk-nav{padding-top:0!important;padding-bottom:0!important
         <div id="client-search-results" class="client-search-results"></div>
       </div>
       <div class="field-grid">
-        <label class="field-label"><span>First name</span><input class="field-input" name="firstName" type="text" placeholder="e.g. Maria" autocapitalize="words" autocomplete="off"></label>
-        <label class="field-label"><span>Last name</span><input class="field-input" name="lastName" type="text" placeholder="e.g. Santos" autocapitalize="words" autocomplete="off"></label>
+        <label class="field-label"><span>First name <b class="req24">*</b></span><input class="field-input" name="firstName" type="text" placeholder="e.g. Maria" autocapitalize="words" autocomplete="off"></label>
+        <label class="field-label"><span>Last name <b class="req24">*</b></span><input class="field-input" name="lastName" type="text" placeholder="e.g. Santos" autocapitalize="words" autocomplete="off"></label>
         <input name="customerName" type="text" tabindex="-1" aria-hidden="true" autocomplete="off" style="display:none">
         <label class="field-label"><span data-i18n="fDate">Date</span><input class="field-input" name="date" type="date"></label>
         <label class="field-label"><span data-i18n="fAge">Age</span><input class="field-input" name="age" type="number"></label>
-        <label class="field-label"><span data-i18n="fPhone">Contact number</span><input class="field-input" name="phone" type="tel"></label>
+        <label class="field-label"><span><span data-i18n="fPhone">Contact number</span> <b class="req24" title="Contact number or email — at least one">*</b></span><input class="field-input" name="phone" type="tel"></label>
         <label class="field-label"><span data-i18n="fDob">Date of birth</span><input class="field-input" name="dob" type="date"></label>
-        <label class="field-label"><span data-i18n="fEmail">Email address</span><input class="field-input" name="email" type="email" placeholder="name@email.com"></label>
+        <label class="field-label"><span><span data-i18n="fEmail">Email address</span> <b class="req24" title="Contact number or email — at least one">*</b></span><input class="field-input" name="email" type="email" placeholder="name@email.com"></label>
       </div>
       <fieldset style="margin-top:32px; border:0; padding:0;">
         <legend class="field-title" data-i18n="discoveryLegend">How did you discover us?</legend>
@@ -2609,6 +2609,53 @@ if (clientSearchEl && clientSearchResultsEl){
   if (qf || ql){ desc.set.call(fn, qf); desc.set.call(ln, ql); join(); }
   else if (desc.get.call(full)) { const [a, b] = split(desc.get.call(full)); desc.set.call(fn, a); desc.set.call(ln, b); }
   f.addEventListener("reset", () => setTimeout(() => { desc.set.call(fn, ""); desc.set.call(ln, ""); }, 0));
+})();
+</script>
+<script>
+// ── MANDATORY: First + Last name; at least one of Contact number or Email ──
+(function(){
+  const st=document.createElement("style");st.textContent=`
+.req24{color:#B0392B}
+.field-input.miss24{border-color:#B0392B!important;background:#FDF1EF!important;box-shadow:0 0 0 2px rgba(176,57,43,.15)!important}
+.alert24{margin:12px 0;padding:12px 14px;border-radius:10px;background:#FBE6E3;border:1px solid #B0392B;color:#8E2A1E;font-weight:600;font-size:15px;line-height:1.45}
+.note24{font-size:12.5px;color:#8E2A1E;margin-top:4px}`;document.head.appendChild(st);
+  const f=document.getElementById("assessment-form");if(!f)return;
+  const el=n=>f.elements[n];
+  // paalala sa ilalim ng email
+  const em=el("email");if(em&&em.closest("label")){const n=document.createElement("div");n.className="note24";n.textContent="* Contact number or email — at least one is required.";em.closest("label").appendChild(n);}
+  const okPhone=v=>String(v||"").replace(/\D/g,"").length>=7;
+  const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v||"").trim());
+  function problems(){
+    const p=[],bad=[];
+    const fn=String((el("firstName")||{}).value||"").trim(),ln=String((el("lastName")||{}).value||"").trim();
+    if(!fn||!ln){p.push("Please enter the client's first name and last name.");if(!fn)bad.push("firstName");if(!ln)bad.push("lastName");}
+    const ph=(el("phone")||{}).value,ml=(el("email")||{}).value;
+    if(!okPhone(ph)&&!okMail(ml)){
+      const typed=String(ph||"").trim()||String(ml||"").trim();
+      p.push(typed?"Please check the contact number or email format.":"Please enter a contact number or an email address (at least one).");bad.push("phone","email");
+    }
+    return{p,bad};
+  }
+  function paint(show){
+    const{p,bad}=problems();
+    ["firstName","lastName","phone","email"].forEach(n=>{const e=el(n);if(e)e.classList.toggle("miss24",show&&bad.includes(n));});
+    let box=document.getElementById("alert24");
+    if(show&&p.length){
+      if(!box){box=document.createElement("div");box.id="alert24";box.className="alert24";const a=el("firstName")&&el("firstName").closest(".field-grid");(a||f).parentNode.insertBefore(box,a||f.firstChild);}
+      box.innerHTML="⚠️ Incomplete — "+p.join(" ");
+      const box2=document.getElementById("alert24b")||(()=>{const b=document.createElement("div");b.id="alert24b";b.className="alert24";const ft=document.getElementById("save-btn").closest("footer");ft.parentNode.insertBefore(b,ft);return b;})();
+      box2.innerHTML=box.innerHTML;
+    }else{if(box)box.remove();const b2=document.getElementById("alert24b");if(b2)b2.remove();}
+    return p.length===0;
+  }
+  let shown=false;
+  document.addEventListener("click",e=>{
+    if(!e.target.closest||!e.target.closest("#save-btn"))return;
+    if(!paint(true)){shown=true;e.preventDefault();e.stopImmediatePropagation();
+      const b=document.getElementById("alert24");if(b&&b.scrollIntoView)b.scrollIntoView({behavior:"smooth",block:"center"});}
+  },true);
+  f.addEventListener("input",e=>{if(shown&&["firstName","lastName","phone","email"].includes(e.target.name))paint(true);});
+  f.addEventListener("reset",()=>{shown=false;setTimeout(()=>paint(false),0);});
 })();
 </script>
 </body>
